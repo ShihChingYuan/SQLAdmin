@@ -484,14 +484,24 @@ GO
 /*
 	暴力清除交易紀錄檔 & 壓縮資料庫
 */
+
+DECLARE @iDBCount INT = 0;
+SELECT @iDBCount = COUNT(*)
+FROM sys.databases
+where [database_id] > 4
+	AND [state_desc] = 'ONLINE'
+
 select
-	'ALTER DATABASE [' + name+ '] SET RECOVERY SIMPLE WITH NO_WAIT'
-	, 'BACKUP DATABASE [' + name + '] TO DISK=''NULL'' WITH INIT'
-	, 'DBCC SHRINKDATABASE(''' + name + ''') '
+	'PRINT ''' + RIGHT('0000' + CAST(ROW_NUMBER() OVER (ORDER BY [name]) AS VARCHAR(32)), 4) + '/' + RIGHT('0000' + CAST(@iDBCount AS VARCHAR(32)), 4) 
+		+ '	[' + [name] + '];'''
+	, 'ALTER DATABASE [' + [name]+ '] SET RECOVERY SIMPLE WITH NO_WAIT;'
+	--, 'BACKUP DATABASE [' + [name] + '] TO DISK=''NULL'' WITH INIT'
+	, 'DBCC SHRINKDATABASE(''' + [name] + ''');'
+	, 'ALTER DATABASE [' + [name]+ '] SET RECOVERY FULL WITH NO_WAIT;'
 	, *
 FROM sys.databases
 where [database_id] > 4
-AND [state_desc] = 'ONLINE'
+	AND [state_desc] = 'ONLINE'
 order by [name]
 
 /*
@@ -501,7 +511,7 @@ order by [name]
 --dbpro2 本機版
 USE [master]
 GO
-DECLARE @ARCHIVEMONTH  CHAR(8) = '.2017.11'
+DECLARE @ARCHIVEMONTH  CHAR(8) = '.2018.06'
 DECLARE @nvarMKDIR NVARCHAR(MAX) = '';
 SET @nvarMKDIR = '
 IF EXISTS (SELECT * FROM sys.databases WHERE [name] = ''?'' AND [state_desc] = ''ONLINE'')
@@ -516,7 +526,7 @@ EXEC sp_msforeachdb @nvarMKDIR;
 --nas unc 遠端版
 USE [master]
 GO
-DECLARE @ARCHIVEMONTH  CHAR(8) = '.2017.10'
+DECLARE @ARCHIVEMONTH  CHAR(8) = '.2018.06'
 DECLARE @nvarMKDIR NVARCHAR(MAX) = '';
 SET @nvarMKDIR = '
 IF EXISTS (SELECT * FROM sys.databases WHERE [name] = ''?'' AND [state_desc] = ''ONLINE'')
